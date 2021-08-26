@@ -11,8 +11,11 @@ import {
 import dotenv from "dotenv";
 dotenv.config();
 
-let commands: { global: BaseCommand[]; guild: BaseCommand[] };
-let buttons: BaseButton[];
+let commands: { global: BaseCommand[]; guild: BaseCommand[] } = {
+  global: [],
+  guild: [],
+};
+let buttons: BaseButton[] = [];
 
 const client = new Client({
   intents: Intents.FLAGS.GUILDS | Intents.FLAGS.GUILD_MESSAGES,
@@ -27,6 +30,34 @@ client.once("ready", async () => {
   await registerGuildCommands(client, commands.guild);
 
   console.log("bot is ready...");
+});
+
+client.on("interactionCreate", (interaction) => {
+  if (interaction.isCommand()) {
+    const command =
+      commands.guild.find((value) => value.name === interaction.commandName) ||
+      commands.global.find((value) => value.name === interaction.commandName);
+    if (command) {
+      command.execute(interaction);
+    } else {
+      interaction.reply({
+        content: "コマンドが見つかりませんでした。",
+        ephemeral: true,
+      });
+    }
+  } else if (interaction.isButton()) {
+    const button = buttons.find(
+      (value) => value.component.customId === interaction.customId
+    );
+    if (button) {
+      button.execute(interaction);
+    } else {
+      interaction.reply({
+        content: "そのボタンは期限切れです。",
+        ephemeral: true,
+      });
+    }
+  }
 });
 
 client.login(process.env.BOT_TOKEN);
